@@ -1,0 +1,10 @@
+name: go-auth
+
+services:
+  postgres:
+    image: postgres:latest
+    container_name: pg-container
+    ports:
+      - "5432:5432"
+    environment:
+      DB_PASS: "secret"
