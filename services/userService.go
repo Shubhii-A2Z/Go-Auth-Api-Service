@@ -1,12 +1,15 @@
 package services
 
-import db "AuthInGo/db/repositories"
+import (
+	db "AuthInGo/db/repositories"
+)
 
 type UserService interface {
 	CreateUser() error
+	GetUserById() error
 }
 
-// UserService depending on UserRepo Interface
+// UserService depending on UserRepo Interface: (ServiceLayer->RepositoryLayer)
 type UserServiceImpl struct {
 	userRepository db.UserRepository
 }
@@ -18,5 +21,11 @@ func NewUserService(userRepo db.UserRepository) *UserServiceImpl {
 }
 
 func (u *UserServiceImpl) CreateUser() error {
+	u.userRepository.Create()
+	return nil
+}
+
+func (u *UserServiceImpl) GetUserById() error {
+	u.userRepository.GetById()
 	return nil
 }
