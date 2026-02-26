@@ -7,6 +7,7 @@ import (
 type UserService interface {
 	CreateUser() error
 	GetUserById() error
+	GetAllUsers() error
 }
 
 // UserService depending on UserRepo Interface: (ServiceLayer->RepositoryLayer)
@@ -27,5 +28,10 @@ func (u *UserServiceImpl) CreateUser() error {
 
 func (u *UserServiceImpl) GetUserById() error {
 	u.userRepository.GetById()
+	return nil
+}
+
+func (u *UserServiceImpl) GetAllUsers() error {
+	u.userRepository.GetAll()
 	return nil
 }

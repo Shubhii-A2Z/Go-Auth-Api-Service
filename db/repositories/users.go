@@ -9,6 +9,7 @@ import (
 type UserRepository interface {
 	Create() (error)
 	GetById() (*models.User,error)
+	GetAll() (error)
 }
 
 type UserRepositoryImpl struct {
@@ -75,4 +76,31 @@ func (u *UserRepositoryImpl) GetById() (*models.User,error) {
 	fmt.Println("User found:",user)
 
 	return user,nil
+}
+
+func (u *UserRepositoryImpl) GetAll() (error){
+	query:=`Select *
+			From users`
+
+	row,err:=u.db.Query(query)
+
+	if err!=nil{
+		fmt.Println("Error Querying rows:",err)
+		return err
+	}
+
+	users:=[]models.User{}
+
+	for row.Next(){
+		user:=models.User{}
+		err:=row.Scan(&user.Id,&user.Username,&user.Email,&user.Password,&user.CreatedAt,&user.UpdatedAt)
+		if err!=nil{
+			fmt.Println("Error scanning rows:",err)
+			return err
+		}
+		users=append(users,user)
+	}
+
+	fmt.Println("Users found:",users)
+	return nil
 }

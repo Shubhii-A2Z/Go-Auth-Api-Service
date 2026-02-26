@@ -26,3 +26,8 @@ func (uc *UserController) GetUserById(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("GetUserById Controller Called")
 	uc.UserService.GetUserById()
 }
+
+func (uc *UserController) GetUsers(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("GetUserById Controller Called")
+	uc.UserService.GetAllUsers()
+}
