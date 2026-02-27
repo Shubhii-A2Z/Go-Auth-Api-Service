@@ -28,6 +28,11 @@ func (uc *UserController) GetUserById(w http.ResponseWriter, r *http.Request) {
 }
 
 func (uc *UserController) GetUsers(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("GetUserById Controller Called")
+	fmt.Println("GetUsers Controller Called")
 	uc.UserService.GetAllUsers()
+}
+
+func (uc *UserController) LoginUser(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("LoginUser Controller Called")
+	uc.UserService.LoginUser()
 }

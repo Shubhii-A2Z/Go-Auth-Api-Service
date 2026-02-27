@@ -7,7 +7,7 @@ import (
 )
 
 type UserRepository interface {
-	Create() (error)
+	Create(username string,email string,hashPassword string) (error)
 	GetById() (*models.User,error)
 	GetAll() (error)
 }
@@ -22,10 +22,10 @@ func NewUserRepository(_db *sql.DB) *UserRepositoryImpl{
 	}
 }
 
-func (u *UserRepositoryImpl) Create() (error) {
+func (u *UserRepositoryImpl) Create(username string,email string,hashPassword string) (error) {
 	query:=`Insert into users (username,email,password) values (?,?,?)`
 
-	res,err:=u.db.Exec(query,"testUser","test@gmail.com","testPassword")
+	res,err:=u.db.Exec(query,username,email,hashPassword)
 
 	if err!=nil{
 		fmt.Println("Error Inserting user:",err)
