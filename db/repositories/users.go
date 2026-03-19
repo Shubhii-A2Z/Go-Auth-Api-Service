@@ -10,6 +10,7 @@ type UserRepository interface {
 	Create(username string,email string,hashPassword string) (error)
 	GetById() (*models.User,error)
 	GetAll() (error)
+	GetByEmail(email string) (*models.User,error)
 }
 
 type UserRepositoryImpl struct {
@@ -103,4 +104,28 @@ func (u *UserRepositoryImpl) GetAll() (error){
 
 	fmt.Println("Users found:",users)
 	return nil
+}
+
+func (u* UserRepositoryImpl) GetByEmail(email string) (*models.User,error){
+	query:=`Select id,email,password
+			From users
+			Where email=?`
+
+	row:=u.db.QueryRow(query,email)
+
+	user:=&models.User{}
+
+	err:=row.Scan(&user.Id,&user.Email,&user.Password)
+
+	if err!=nil{
+		if err==sql.ErrNoRows{
+			fmt.Println("No user found with given email")
+			return nil,err
+		}else{
+			fmt.Println("Error scanning user:",err)
+			return nil,err
+		}
+	}
+
+	return user,nil
 }

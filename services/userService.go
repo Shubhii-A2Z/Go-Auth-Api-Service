@@ -4,13 +4,15 @@ import (
 	db "AuthInGo/db/repositories"
 	"AuthInGo/utils"
 	"fmt"
+	env "AuthInGo/config/env"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 type UserService interface {
 	CreateUser() error
 	GetUserById() error
 	GetAllUsers() error
-	LoginUser() error
+	LoginUser() (string,error)
 }
 
 // UserService depending on UserRepo Interface: (ServiceLayer->RepositoryLayer)
@@ -41,8 +43,46 @@ func (u *UserServiceImpl) GetAllUsers() error {
 	return nil
 }
 
-func (u *UserServiceImpl) LoginUser() error {
-	resp:=utils.CheckPasswordHash("hashed_password_example1","$2a$10$0qpHsLF4oLm9wtj6OiJcT.eUykowubF2ZW.Hx06ZWWq6Iw7yB/i.2")
-	fmt.Println("Login Response:",resp)
-	return nil
+func (u *UserServiceImpl) LoginUser() (string,error) {
+	email:="user@example.com"
+	password:="hashed_password_example"
+	user,err:=u.userRepository.GetByEmail(email)
+
+	if err!=nil{
+		fmt.Println("Error fetching user:",err)
+		return "",err
+	}
+
+	// Check if user exists or not
+	if user==nil{
+		fmt.Println("User not found with given email")
+		return "",fmt.Errorf("No user with email %s",email)
+	}
+
+	// If user exists, check is password is correct
+	isPasswordValid:=utils.CheckPasswordHash(password,user.Password)
+	if !isPasswordValid{
+		fmt.Println("Incorrect Password")
+		return "",nil
+	}
+
+	// Creating payload object
+	payload:=jwt.MapClaims{
+		"email": user.Email,
+		"id": user.Id,
+	}
+
+	// Creating JWT token object
+	token:=jwt.NewWithClaims(jwt.SigningMethodHS256,payload)
+
+	// Converting to JWT token string, signed using secret key
+	tokenString,err:=token.SignedString([]byte(env.GetString("JWT_SECRET","SECRET")))
+
+	if err!=nil{
+		fmt.Println("Error signing token:",err)
+		return "",err
+	}
+
+	fmt.Println("JWT Token:",tokenString)
+	return tokenString,nil
 }
