@@ -1,10 +1,12 @@
 package services
 
 import (
+	env "AuthInGo/config/env"
 	db "AuthInGo/db/repositories"
+	"AuthInGo/dtos"
 	"AuthInGo/utils"
 	"fmt"
-	env "AuthInGo/config/env"
+
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -12,7 +14,7 @@ type UserService interface {
 	CreateUser() error
 	GetUserById() error
 	GetAllUsers() error
-	LoginUser() (string,error)
+	LoginUser(*dtos.LoginUserRequestDTO) (string,error)
 }
 
 // UserService depending on UserRepo Interface: (ServiceLayer->RepositoryLayer)
@@ -43,9 +45,10 @@ func (u *UserServiceImpl) GetAllUsers() error {
 	return nil
 }
 
-func (u *UserServiceImpl) LoginUser() (string,error) {
-	email:="user@example.com"
-	password:="hashed_password_example"
+func (u *UserServiceImpl) LoginUser(payload *dtos.LoginUserRequestDTO) (string,error) {
+	email:=payload.Email
+	password:=payload.Password
+
 	user,err:=u.userRepository.GetByEmail(email)
 
 	if err!=nil{
@@ -67,13 +70,13 @@ func (u *UserServiceImpl) LoginUser() (string,error) {
 	}
 
 	// Creating payload object
-	payload:=jwt.MapClaims{
+	jwtPayload:=jwt.MapClaims{
 		"email": user.Email,
 		"id": user.Id,
 	}
 
 	// Creating JWT token object
-	token:=jwt.NewWithClaims(jwt.SigningMethodHS256,payload)
+	token:=jwt.NewWithClaims(jwt.SigningMethodHS256,jwtPayload)
 
 	// Converting to JWT token string, signed using secret key
 	tokenString,err:=token.SignedString([]byte(env.GetString("JWT_SECRET","SECRET")))

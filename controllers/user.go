@@ -1,7 +1,9 @@
 package controllers
 
 import (
+	"AuthInGo/dtos"
 	"AuthInGo/services"
+	"AuthInGo/utils"
 	"fmt"
 	"net/http"
 )
@@ -34,5 +36,20 @@ func (uc *UserController) GetUsers(w http.ResponseWriter, r *http.Request) {
 
 func (uc *UserController) LoginUser(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("LoginUser Controller Called")
-	uc.UserService.LoginUser()
+
+	var payload dtos.LoginUserRequestDTO
+
+	if jsonErr:=utils.ReadJsonBody(r,&payload); jsonErr!=nil {
+		utils.WriteJsonErrorResponse(w,http.StatusBadRequest,"Invalid input data")
+		return
+	}
+
+	jwtToken,err:=uc.UserService.LoginUser(&payload)
+
+	if err!=nil {
+		utils.WriteJsonErrorResponse(w,http.StatusInternalServerError,"Failed to login user")
+		return
+	}
+
+	utils.WriteJsonSuccessResponse(w,http.StatusOK,"User loggedIn successfully",jwtToken)
 }
