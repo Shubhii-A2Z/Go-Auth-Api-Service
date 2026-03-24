@@ -36,7 +36,24 @@ func (uc *UserController) RegisterUser(w http.ResponseWriter, r *http.Request) {
 
 func (uc *UserController) GetUserById(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("GetUserById Controller Called")
-	uc.UserService.GetUserById()
+	// extract userId from url params
+	userId:=r.URL.Query().Get("id")
+
+	if userId==""{
+		utils.WriteJsonErrorResponse(w,http.StatusBadRequest,"User id required")
+	}
+
+	user,err:=uc.UserService.GetUserById(userId)
+
+	if err!=nil{
+		utils.WriteJsonErrorResponse(w,http.StatusInternalServerError,"Failed to fetch user")
+	}
+
+	if user==nil{
+		utils.WriteJsonErrorResponse(w,http.StatusNotFound,"User not found")
+	}
+
+	fmt.Println("User found:",user)
 }
 
 func (uc *UserController) GetUsers(w http.ResponseWriter, r *http.Request) {

@@ -4,6 +4,7 @@ import (
 	env "AuthInGo/config/env"
 	db "AuthInGo/db/repositories"
 	"AuthInGo/dtos"
+	"AuthInGo/models"
 	"AuthInGo/utils"
 	"fmt"
 
@@ -12,8 +13,8 @@ import (
 
 type UserService interface {
 	CreateUser(*dtos.CreateUserRequestDTO) error
-	GetUserById() error
-	GetAllUsers() error
+	GetUserById(string) (*models.User,error)
+	GetAllUsers() (*models.User,error)
 	LoginUser(*dtos.LoginUserRequestDTO) (string,error)
 }
 
@@ -45,14 +46,18 @@ func (u *UserServiceImpl) CreateUser(payload *dtos.CreateUserRequestDTO) error {
 	return nil
 }
 
-func (u *UserServiceImpl) GetUserById() error {
-	u.userRepository.GetById()
-	return nil
+func (u *UserServiceImpl) GetUserById(userId string) (*models.User,error) {
+	user,err:=u.userRepository.GetById()
+	if err!=nil{
+		fmt.Println("Error fetching user:",err)
+		return nil,err
+	}
+	return user,nil
 }
 
-func (u *UserServiceImpl) GetAllUsers() error {
+func (u *UserServiceImpl) GetAllUsers() (*models.User,error) {
 	u.userRepository.GetAll()
-	return nil
+	return nil,nil
 }
 
 func (u *UserServiceImpl) LoginUser(payload *dtos.LoginUserRequestDTO) (string,error) {

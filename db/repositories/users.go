@@ -74,8 +74,6 @@ func (u *UserRepositoryImpl) GetById() (*models.User,error) {
 		}
 	}
 
-	fmt.Println("User found:",user)
-
 	return user,nil
 }
 
