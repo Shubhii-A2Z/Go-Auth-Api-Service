@@ -21,7 +21,17 @@ func NewUserController(userService services.UserService) *UserController{
 
 func (uc *UserController) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("RegisterUser Controller Called")
-	uc.UserService.CreateUser()
+
+	payload:= r.Context().Value("payload").(dtos.CreateUserRequestDTO)
+
+	err:=uc.UserService.CreateUser(&payload)
+
+	if err!=nil{
+		utils.WriteJsonErrorResponse(w,http.StatusInternalServerError,"Failed to create user")
+		return
+	}
+
+	utils.WriteJsonSuccessResponse(w,http.StatusCreated,"User successfully created",payload)
 }
 
 func (uc *UserController) GetUserById(w http.ResponseWriter, r *http.Request) {
@@ -37,12 +47,7 @@ func (uc *UserController) GetUsers(w http.ResponseWriter, r *http.Request) {
 func (uc *UserController) LoginUser(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("LoginUser Controller Called")
 
-	var payload dtos.LoginUserRequestDTO
-
-	if jsonErr:=utils.ReadJsonBody(r,&payload); jsonErr!=nil {
-		utils.WriteJsonErrorResponse(w,http.StatusBadRequest,"Invalid input data")
-		return
-	}
+	payload:=r.Context().Value("payload").(dtos.LoginUserRequestDTO)
 
 	jwtToken,err:=uc.UserService.LoginUser(&payload)
 
