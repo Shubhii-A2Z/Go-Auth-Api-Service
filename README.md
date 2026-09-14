@@ -28,6 +28,8 @@ Use this repository as a generic template for bootstrapping new Go backend servi
     - [12.5 Static Members & Methods](#125-static-members--methods)
     - [12.6 Final, Readonly, and Immutability](#126-final-readonly-and-immutability)
     - [12.7 How Middlewares Work in Go vs. Node.js (Express)](#127-how-middlewares-work-in-go-vs-nodejs-express)
+    - [12.8 Dependency Inversion Principle (DIP) & Clean Architecture](#128-dependency-inversion-principle-dip--clean-architecture)
+    - [12.9 Starter Commands: Node.js vs. Go Comparison](#129-starter-commands-nodejs-vs-go-comparison)
 
 ---
 
@@ -128,6 +130,12 @@ JWT_SECRET=super_secret_jwt_key
 ---
 
 ## How to Run the Project
+
+### Step 0: Download Dependencies
+Download all project dependencies specified in `go.mod`:
+```bash
+go mod download
+```
 
 ### Step 1: Start Database Container
 ```bash
@@ -869,6 +877,134 @@ r.With(middlewares.JWTAuthMiddleware).Get("/profile/{id}", ur.UserController.Get
 
 
 ---
+
+
+---
+
+### 12.8 Dependency Inversion Principle (DIP) & Clean Architecture
+
+The **Dependency Inversion Principle (DIP)** states:
+1. **High-level modules** (e.g. Services, Controllers) should not depend on **low-level modules** (e.g. MySQL DB drivers, specific HTTP libraries). Both should depend on **abstractions** (Interfaces).
+2. **Abstractions** should not depend on details. **Details** should depend on abstractions.
+
+#### Dependency Architecture Chain
+
+```
+[Controller Layer] ──depends on──> [UserService Interface]
+                                          ▲
+                                     implements
+                                          │
+                                 [UserServiceImpl] ──depends on──> [UserRepository Interface]
+                                                                                ▲
+                                                                           implements
+                                                                                │
+                                                                       [UserRepositoryImpl]
+```
+
+#### Code Implementation Example
+
+1. **Service Layer Abstraction (`services/userService.go`)**:
+   ```go
+   type UserService interface {
+       CreateUser(*dtos.CreateUserRequestDTO) error
+       GetUserById(string) (*models.User, error)
+       GetAllUsers() (*models.User, error)
+       LoginUser(*dtos.LoginUserRequestDTO) (string, error)
+   }
+
+   type UserServiceImpl struct {
+       userRepository db.UserRepository // Depend on interface, NOT concrete MySQL struct
+   }
+
+   func NewUserService(userRepo db.UserRepository) *UserServiceImpl {
+       return &UserServiceImpl{userRepository: userRepo}
+   }
+   ```
+
+2. **Repository Layer Abstraction (`db/repositories/users.go`)**:
+   ```go
+   type UserRepository interface {
+       Create(username, email, hashPassword string) error
+       GetByEmail(email string) (*models.User, error)
+       GetById() (*models.User, error)
+       GetAll() error
+   }
+
+   type UserRepositoryImpl struct {
+       db *sql.DB // Concrete database driver instance
+   }
+
+   func NewUserRepository(_db *sql.DB) *UserRepositoryImpl {
+       return &UserRepositoryImpl{db: _db}
+   }
+   ```
+
+3. **Wiring Layers via Constructor Injection (`app/application.go`)**:
+   ```go
+   func (app *Application) Run() error {
+       db, err := dbConfig.SetupDB()
+
+       // Construct dependencies bottom-up and inject interfaces
+       userRepo := repo.NewUserRepository(db)                     // satisfies db.UserRepository
+       userService := services.NewUserService(userRepo)            // satisfies services.UserService
+       userController := controllers.NewUserController(userService)
+       userRouter := router.NewUserRouter(*userController)
+
+       // launch http.Server...
+   }
+   ```
+
+#### Benefits for System Design & Testing
+* **Decoupled Business Logic**: Core business rules in `UserServiceImpl` have zero direct knowledge of MySQL or HTTP details.
+* **Easy Mocking & Unit Testing**: You can pass a `MockUserRepository` struct to `NewUserService()` during unit tests without running a live database server.
+* **Database Swapability**: Switching from MySQL to PostgreSQL or MongoDB only requires creating a new struct that satisfies `db.UserRepository` — zero lines of service layer code need to change.
+
+---
+
+
+---
+
+### 12.9 Starter Commands: Node.js vs. Go Comparison
+
+When starting or managing projects, Go provides direct equivalents for standard Node.js (`npm` / `yarn` / `pnpm`) terminal commands.
+
+#### Node.js vs. Go Command Cheat Sheet
+
+| Task | Node.js Command | Go Equivalent Command | Explanation |
+| :--- | :--- | :--- | :--- |
+| **Initialize new project** | `npm init -y` | `go mod init <module-name>` | Initializes a new module, creating `package.json` in Node or `go.mod` in Go. Example: `go mod init github.com/username/my-go-backend` |
+| **Install package dependency** | `npm install <package>` | `go get <package-path>` | Downloads package and records it in `go.mod` & `go.sum`. Example: `go get github.com/go-chi/chi/v5` |
+| **Install specific version** | `npm install <pkg>@1.2.3` | `go get <pkg>@v1.2.3` | Installs a precise version tag (e.g. `go get github.com/golang-jwt/jwt/v5@v5.3.1`). |
+| **Install existing repo dependencies** | `npm install` | `go mod download` | Downloads all dependencies listed in `go.mod` to your local module cache. |
+| **Clean & sync dependencies** | `npm prune` | `go mod tidy` | Scans all `.go` files, adds missing imports to `go.mod`, and removes unused packages. |
+| **Run development server** | `npm run dev` (via `nodemon`) | `air` or `go run main.go` | Starts application with hot-reloading (`air`) or runs source directly (`go run main.go`). |
+| **Build production binary** | `npm run build` | `go build -o bin/app main.go` | Compiles source code into a single, zero-dependency executable binary file. |
+| **Run unit tests** | `npm test` | `go test -v ./...` | Runs all tests in current directory and sub-packages (`./...`). |
+
+#### Step-by-Step: Bootstrapping a New Go Project from Scratch
+
+1. **Create project directory & initialize module**:
+   ```bash
+   mkdir my-go-service && cd my-go-service
+   go mod init my-go-service
+   ```
+2. **Install core framework dependencies**:
+   ```bash
+   go get github.com/go-chi/chi/v5           # HTTP Router
+   go get github.com/golang-jwt/jwt/v5        # JWT Auth
+   go get golang.org/x/crypto                 # Bcrypt Hashing
+   go get github.com/go-sql-driver/mysql      # MySQL Driver
+   go get github.com/joho/godotenv            # .env Loader
+   ```
+3. **Synchronize dependencies**:
+   ```bash
+   go mod tidy
+   ```
+4. **Run development mode**:
+   ```bash
+   go run main.go
+   ```
+
 
 ## External Dependencies & Libraries Breakdown
 
